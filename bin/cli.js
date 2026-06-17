@@ -293,12 +293,14 @@ program
   .option('--global', 'For skill packs: install to ~/.agents/skills/ (user-global)')
   .option('--all', 'For skill packs: install to all detected runtime dirs in CWD')
   .option('--force', 'Bypass constitution compliance check (not recommended — review flagged content first)')
+  .option('--order <id>', 'For op://private packs: the purchase order id (from "My Purchases")')
   .addHelpText('after', [
     '',
     'Examples:',
     '  openpersona install acnlabs/anyone-skill        (auto-routes: persona or skill)',
     '  openpersona install owner/repo --runtime=claude (force skill → .claude/skills/)',
     '  openpersona install owner/repo --global         (force skill → ~/.agents/skills/)',
+    '  openpersona install op://private/<slug> --order <id>  (paid pack — run `openpersona login` first)',
     '',
     'Use `openpersona persona install` for persona-only guaranteed routing.',
     'Use `openpersona skill install` for skill-only guaranteed routing.',
@@ -307,7 +309,7 @@ program
     let dir;
     let skipCopy = false;
     try {
-      const result = await download(target, options.registry);
+      const result = await download(target, options.registry, { orderId: options.order });
       dir = result.dir;
       skipCopy = !!result.skipCopy;
 
@@ -349,6 +351,53 @@ program
         try { await fs.remove(dir); } catch { /* ignore */ }
       }
     }
+  });
+
+program
+  .command('login')
+  .description('Sign in as a buyer (Auth0 device flow) to install paid op://private packs')
+  .action(async () => {
+    const cliAuth = require('../lib/remote/auth');
+    try {
+      const record = await cliAuth.deviceLogin();
+      printSuccess('Signed in.');
+      if (record.expires_at) {
+        printInfo(`Token valid until ${new Date(record.expires_at).toLocaleString()}.`);
+      }
+      printInfo(`Credentials stored at ${cliAuth.authFilePath()}`);
+    } catch (e) {
+      printError(e.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('logout')
+  .description('Remove the locally stored buyer credentials')
+  .action(async () => {
+    const cliAuth = require('../lib/remote/auth');
+    const removed = cliAuth.clearAuth();
+    if (removed) printSuccess('Signed out.');
+    else printInfo('No stored credentials to remove.');
+  });
+
+program
+  .command('whoami')
+  .description('Show the current buyer login status')
+  .action(async () => {
+    const cliAuth = require('../lib/remote/auth');
+    const auth = cliAuth.loadAuth();
+    if (!auth || !auth.access_token) {
+      printInfo('Not signed in. Run `openpersona login` to install paid packs.');
+      return;
+    }
+    const expired = cliAuth.isExpired(auth);
+    printInfo(`Signed in${auth.audience ? ` (audience: ${auth.audience})` : ''}.`);
+    if (auth.expires_at) {
+      printInfo(`Token ${expired ? 'EXPIRED at' : 'valid until'} ${new Date(auth.expires_at).toLocaleString()}.`);
+    }
+    if (expired && auth.refresh_token) printInfo('It will refresh automatically on next install.');
+    else if (expired) printInfo('Run `openpersona login` to refresh.');
   });
 
 program
@@ -636,6 +685,51 @@ program
       const destDir = await importPersona(file, { extractDir: options.output });
       printSuccess(`Imported and installed from ${file}`);
       printInfo(`  Installed to: ${destDir}`);
+    } catch (e) {
+      printError(e.message);
+      process.exit(1);
+    }
+  });
+
+// ── Marketplace: private paid-pack listing (asset layer) ─────────────────────
+//
+// Produces a sanitized pack zip and uploads it to private object storage,
+// returning the op://private/<slug>@<version> pack_ref. Store product
+// registration (price/royalty/preview) is the gateway's job — this command
+// only handles the OP-owned bytes (docs/MARKETPLACE-GATED-DELIVERY.md §2.3a).
+
+const marketCmd = program
+  .command('market')
+  .description('Private paid-pack listing (export → sanitize → upload to private storage)');
+
+marketCmd
+  .command('publish <slug>')
+  .description('Produce a sanitized pack and upload it to private storage; prints the pack_ref')
+  .option('--version <version>', 'Version to publish under (defaults to persona.json version)')
+  .option('--region <region>', 'Storage region: global (R2) or cn (MinIO)', 'global')
+  .option('--keep-zip <path>', 'Keep the produced pack zip at this path')
+  .action(async (slug, options) => {
+    const { publishPrivatePack } = require('../lib/remote/lister');
+    const skillDir = resolvePersonaDir(slug);
+    if (!skillDir) {
+      printError(`Persona not found: "${slug}". Install it first with: openpersona install <source>`);
+      process.exit(1);
+    }
+    try {
+      printInfo(`Producing sanitized pack for "${slug}"...`);
+      const res = await publishPrivatePack({
+        packDir: skillDir,
+        region: options.region,
+        version: options.version,
+        zipOut: options.keepZip,
+      });
+      printSuccess(`Uploaded private pack: ${res.packRef}`);
+      printInfo(`  Region:    ${res.region}`);
+      printInfo(`  Object:    ${res.bucket}/${res.key}`);
+      if (res.zipPath) printInfo(`  Local zip: ${res.zipPath}`);
+      printInfo('');
+      printInfo('Next: register this pack_ref with Store to set price/royalty/preview:');
+      printInfo(`  POST /api/store/persona/products  { "pack_ref": "${res.packRef}", ... }`);
     } catch (e) {
       printError(e.message);
       process.exit(1);

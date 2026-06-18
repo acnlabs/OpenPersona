@@ -341,4 +341,35 @@ describe('forkPersona — parentPackRevision', () => {
 
     assert.strictEqual(lineage.parentPackRevision, undefined);
   });
+
+  it('inherits rootCreator and rootPackRef from parent lineage (resale royalty)', async () => {
+    const slug     = 'refine-fork-root-' + Date.now();
+    const skillDir = await makePersonaDir(slug);
+
+    // Simulate a purchased parent whose royalty provenance was recorded at
+    // install time (downloader.writePurchaseProvenance).
+    fs.writeFileSync(
+      path.join(skillDir, 'soul', 'lineage.json'),
+      JSON.stringify({
+        generation: 0,
+        rootCreator: 'auth0|root-author',
+        rootPackRef: 'op://private/origin@1.0.0',
+        purchasedVia: 'op-store-redeem',
+      }, null, 2),
+    );
+
+    const childOut = path.join(TMP, 'fork-child-root-out-' + Date.now());
+    fs.ensureDirSync(childOut);
+
+    const { lineage } = await forkPersona(slug, {
+      as:        slug + '-child',
+      parentDir: skillDir,
+      output:    childOut,
+    });
+
+    assert.strictEqual(lineage.rootCreator, 'auth0|root-author');
+    assert.strictEqual(lineage.rootPackRef, 'op://private/origin@1.0.0');
+    // gen-0 parent → child is gen 1
+    assert.strictEqual(lineage.generation, 1);
+  });
 });

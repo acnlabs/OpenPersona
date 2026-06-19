@@ -52,20 +52,10 @@ FAILED_TESTS=()
 ok()   { echo "  ✓  $1"; PASS=$((PASS+1)); }
 fail() { echo "  ✗  $1"; FAIL=$((FAIL+1)); FAILED_TESTS+=("$1"); }
 
-# ── step 1: structural smoke test ─────────────────────────────────────────────
-echo "Step 1 — Structural smoke test (node --test)"
-echo "─────────────────────────────────────────────"
-if node --test "$ROOT_DIR/tests/living-canvas.smoke.test.js" > /tmp/acceptance-smoke.log 2>&1; then
-  SMOKE_PASS=$(grep -c '^ok' /tmp/acceptance-smoke.log || true)
-  ok "smoke test ($SMOKE_PASS cases passed)"
-else
-  fail "smoke test (see /tmp/acceptance-smoke.log for details)"
-  cat /tmp/acceptance-smoke.log
-fi
-
-# ── step 2: existing test suite ───────────────────────────────────────────────
-echo ""
-echo "Step 2 — Existing test suite (npm test)"
+# ── step 1: existing test suite (run BEFORE smoke — smoke-first pollutes global
+# state and causes flaky test-runner IPC failures in skill suites; matches CI
+# matrix order: npm test then living-canvas smoke) ───────────────────────────
+echo "Step 1 — Existing test suite (npm test)"
 echo "─────────────────────────────────────────────"
 if (cd "$ROOT_DIR" && npm test) > /tmp/acceptance-unit.log 2>&1; then
   UNIT_PASS=$(grep -c '^ok' /tmp/acceptance-unit.log || true)
@@ -73,6 +63,18 @@ if (cd "$ROOT_DIR" && npm test) > /tmp/acceptance-unit.log 2>&1; then
 else
   fail "unit tests (see /tmp/acceptance-unit.log for details)"
   tail -40 /tmp/acceptance-unit.log
+fi
+
+# ── step 2: structural smoke test ─────────────────────────────────────────────
+echo ""
+echo "Step 2 — Structural smoke test (node --test)"
+echo "─────────────────────────────────────────────"
+if node --test "$ROOT_DIR/tests/living-canvas.smoke.test.js" > /tmp/acceptance-smoke.log 2>&1; then
+  SMOKE_PASS=$(grep -c '^ok' /tmp/acceptance-smoke.log || true)
+  ok "smoke test ($SMOKE_PASS cases passed)"
+else
+  fail "smoke test (see /tmp/acceptance-smoke.log for details)"
+  cat /tmp/acceptance-smoke.log
 fi
 
 # ── step 3: optional playwright screenshot ────────────────────────────────────

@@ -13,15 +13,13 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const testsDir = path.join(root, 'tests');
+const preload = path.join(__dirname, 'test-preload.js');
 
 if (!fs.existsSync(testsDir)) {
   console.error('tests/ directory not found');
   process.exit(1);
 }
 
-// Recursively collect all .js files under tests/ so suites in subdirectories
-// (e.g. tests/skill/) are picked up. Node 21+ changed --test directory-mode
-// semantics; we always pass explicit file paths for determinism across versions.
 function collectTests(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -42,15 +40,31 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-// --test-concurrency=1 serializes test files.
-// Required because several suites temporarily chdir / override process.exit —
-// parallel workers can race and cause "Unable to deserialize cloned data"
-// structured-clone failures on Node 20.x. Serial execution is deterministic
-// and the whole suite still completes in ~15s.
-const result = spawnSync(
-  process.execPath,
-  ['--test', '--test-concurrency=1', ...files],
-  { stdio: 'inherit', cwd: root }
-);
+const DESERIALIZE_RE = /Unable to deserialize cloned data/;
 
-process.exit(result.status ?? 1);
+function runTestFile(file) {
+  return spawnSync(
+    process.execPath,
+    ['--require', preload, '--test', '--test-concurrency=1', file],
+    { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+  );
+}
+
+for (const file of files) {
+  const rel = path.relative(root, file);
+  let result = runTestFile(file);
+  const combined = `${result.stdout || ''}${result.stderr || ''}`;
+  if ((result.status ?? 1) !== 0 && DESERIALIZE_RE.test(combined)) {
+    process.stderr.write(`\n[retry] IPC deserialize flake in ${rel}, re-running once…\n`);
+    result = runTestFile(file);
+  }
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  const status = result.status ?? 1;
+  if (status !== 0) {
+    console.error(`\nTest file failed: ${rel} (exit ${status})`);
+    process.exit(status);
+  }
+}
+
+process.exit(0);

@@ -34,6 +34,12 @@ const path = require('node:path');
 const fs = require('fs-extra');
 const os = require('os');
 
+// Serialise subtests — parallel installer/registry tests can race and trigger
+// Node test-runner IPC "Unable to deserialize cloned data" on CI (Node 20.x).
+if (typeof test.configure === 'function') {
+  test.configure({ concurrency: 1 });
+}
+
 const ROOT = path.resolve(__dirname, '..');
 
 // ── 1. Schema drift: PACK_TYPES ↔ schema packType enum ──────────────────────

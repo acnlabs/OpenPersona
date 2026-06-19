@@ -16,6 +16,10 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs-extra');
 
+if (typeof test.configure === 'function') {
+  test.configure({ concurrency: 1 });
+}
+
 const { installSkill, resolveTargets } = require('../../lib/skill/installer');
 const { uninstallSkill } = require('../../lib/skill/uninstaller');
 const { updateSkill } = require('../../lib/skill/updater');

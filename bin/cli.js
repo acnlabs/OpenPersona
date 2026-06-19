@@ -35,6 +35,43 @@ const { exportPersona, importPersona } = require('../lib/lifecycle/porter');
 const PKG_ROOT = path.resolve(__dirname, '..');
 const PRESETS_DIR = path.join(PKG_ROOT, 'presets');
 
+/** Open a URL in the system default browser (best-effort). */
+function openSystemUrl(url) {
+  const { execSync } = require('child_process');
+  try {
+    if (process.platform === 'darwin') {
+      execSync(`open "${url.replace(/"/g, '\\"')}"`, { stdio: 'ignore' });
+    } else if (process.platform === 'win32') {
+      execSync(`start "" "${url.replace(/"/g, '')}"`, { shell: true, stdio: 'ignore' });
+    } else {
+      execSync(`xdg-open "${url.replace(/"/g, '\\"')}"`, { stdio: 'ignore' });
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Copy text to the system clipboard (best-effort; macOS/Linux). */
+function tryCopyToClipboard(text) {
+  const { execSync, spawnSync } = require('child_process');
+  try {
+    if (process.platform === 'darwin') {
+      spawnSync('pbcopy', { input: text, stdio: ['pipe', 'ignore', 'ignore'] });
+      return true;
+    }
+    if (process.platform === 'linux') {
+      if (spawnSync('wl-copy', { input: text, stdio: ['pipe', 'ignore', 'ignore'] }).status === 0) return true;
+      if (spawnSync('xclip', ['-selection', 'clipboard'], { input: text, stdio: ['pipe', 'ignore', 'ignore'] }).status === 0) return true;
+    }
+    if (process.platform === 'win32') {
+      execSync(`powershell -NoProfile -Command "Set-Clipboard -Value '${text.replace(/'/g, "''")}'"`, { stdio: 'ignore' });
+      return true;
+    }
+  } catch { /* ignore */ }
+  return false;
+}
+
 const { version: CLI_VERSION } = require('../package.json');
 
 program
@@ -705,9 +742,10 @@ const marketCmd = program
 marketCmd
   .command('publish <slug>')
   .description('Produce a sanitized pack and upload it to private storage; prints the pack_ref')
-  .option('--version <version>', 'Version to publish under (defaults to persona.json version)')
+  .option('--pack-version <version>', 'Version to publish under (defaults to persona.json version)')
   .option('--region <region>', 'Storage region: global (R2) or cn (MinIO)', 'global')
   .option('--keep-zip <path>', 'Keep the produced pack zip at this path')
+  .option('--no-open', 'Do not open the market sell page in your browser')
   .action(async (slug, options) => {
     const { publishPrivatePack } = require('../lib/remote/lister');
     const skillDir = resolvePersonaDir(slug);
@@ -720,7 +758,7 @@ marketCmd
       const res = await publishPrivatePack({
         packDir: skillDir,
         region: options.region,
-        version: options.version,
+        version: options.packVersion,
         zipOut: options.keepZip,
       });
       printSuccess(`Uploaded private pack: ${res.packRef}`);
@@ -728,8 +766,17 @@ marketCmd
       printInfo(`  Object:    ${res.bucket}/${res.key}`);
       if (res.zipPath) printInfo(`  Local zip: ${res.zipPath}`);
       printInfo('');
-      printInfo('Next: register this pack_ref with Store to set price/royalty/preview:');
-      printInfo(`  POST /api/store/persona/products  { "pack_ref": "${res.packRef}", ... }`);
+      const sellBase = (process.env.OPENPERSONA_SELL_URL || 'https://openpersona.co/market/sell').replace(/\/+$/, '');
+      const sellUrl = `${sellBase}?ref=${encodeURIComponent(res.packRef)}`;
+      printInfo('Next: open the market listing form (price + preview):');
+      printInfo(`  ${sellUrl}`);
+      const skipOpen = options.noOpen || process.env.OPENPERSONA_NO_BROWSER === '1';
+      if (!skipOpen && openSystemUrl(sellUrl)) {
+        printInfo('  (opened in your browser)');
+      }
+      if (tryCopyToClipboard(sellUrl)) {
+        printInfo('  (sell link copied to clipboard)');
+      }
     } catch (e) {
       printError(e.message);
       process.exit(1);

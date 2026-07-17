@@ -287,13 +287,17 @@ describe('applyRefinement — compliance gate', () => {
     process.env.OPENPERSONA_HOME = feedbackHome;
     delete process.env.OPENCLAW_HOME;
 
-    // Call applyRefinement directly with personaDir — no resolvePersonaDir involved
-    const result = await applyRefinement(skillDir, persona);
-    assert.strictEqual(result.applied, false);
-    assert.ok(Array.isArray(result.violations) && result.violations.length > 0);
-
-    process.env.OPENPERSONA_HOME = origHome;
-    if (origClaw !== undefined) process.env.OPENCLAW_HOME = origClaw;
+    try {
+      // Call applyRefinement directly with personaDir - no resolvePersonaDir involved
+      const result = await applyRefinement(skillDir, persona);
+      assert.strictEqual(result.applied, false);
+      assert.ok(Array.isArray(result.violations) && result.violations.length > 0);
+    } finally {
+      if (origHome === undefined) delete process.env.OPENPERSONA_HOME;
+      else process.env.OPENPERSONA_HOME = origHome;
+      if (origClaw === undefined) delete process.env.OPENCLAW_HOME;
+      else process.env.OPENCLAW_HOME = origClaw;
+    }
   });
 });
 

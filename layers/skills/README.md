@@ -30,8 +30,9 @@ The generator resolves it through this chain:
 3. **External soft-ref** — `install` field present (e.g. `"install": "clawhub:weather"`) → skill listed in Expected Capabilities, dormant until installed
 4. **Empty fallback** — skill name only, no description (agent judges usage by name alone)
 
-For a persona that needs public X/Twitter work, declare TweetClaw as a
-dormant external skill guide:
+For a persona that needs public X/Twitter work, declare
+[TweetClaw](https://github.com/Xquik-dev/tweetclaw) as a dormant external skill
+guide:
 
 ```json
 {
@@ -45,10 +46,14 @@ dormant external skill guide:
 }
 ```
 
-For OpenClaw tool execution, install the plugin where the persona runs:
-`openclaw plugins install @xquik/tweetclaw`. Keep API keys in the host runtime
-or OpenClaw plugin config. Treat visible X/Twitter actions, such as posting or
-replying, as user-confirmed steps.
+For OpenClaw tool execution, install the verified ClawHub package where the
+persona runs: `openclaw plugins install clawhub:@xquik/tweetclaw`. Use
+`openclaw plugins install npm:@xquik/tweetclaw` as the npm fallback. Keep API
+keys in the host runtime or OpenClaw plugin config. Treat visible X/Twitter
+actions, such as posting or replying, as user-confirmed steps.
+
+Xquik is an independent third-party service. Not affiliated with X Corp.
+"Twitter" and "X" are trademarks of X Corp.
 
 ## Declaring a Skill
 

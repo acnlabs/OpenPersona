@@ -386,7 +386,7 @@ Orthogonal to the four-layer static structure, five concepts span across all lay
 
 ### Version Synchronization
 
-All **framework** version references must match `package.json` → `version` (currently `0.21.1`):
+All **framework** version references must match `package.json` → `version` (currently `0.22.0`):
 - `package.json` → `version` (single source of truth)
 - `bin/cli.js` → `.version()` reads from `package.json`
 - `lib/generator/index.js` → `FRAMEWORK_VERSION` from `package.json` → `cleanPersona.meta.frameworkVersion`

@@ -1,6 +1,6 @@
 {
   "name": "openpersona",
-  "version": "0.21.1",
+  "version": "0.22.0",
   "description": "Open four-layer agent framework — Soul/Body/Faculty/Skill. Create, manage, and orchestrate agent personas.",
   "main": "lib/generator/index.js",
   "bin": {

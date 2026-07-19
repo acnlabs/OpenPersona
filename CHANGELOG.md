@@ -4,6 +4,40 @@ All notable changes to OpenPersona are documented here.
 
 ---
 
+## [0.22.0] — 2026-07-19
+
+### Added — Marketplace & gated delivery
+- CLI buyer auth + gated private-pack delivery (`lib/remote/private-store.js`, auth helpers)
+- Fork inherits root-creator lineage and records purchase provenance on install
+- Market publish flow opens the sell page after upload; royalty-chain E2E walkthrough docs
+
+### Added — Social / ACN
+- Local contact book + ACN read sync
+- Presence-aware agent-to-agent messaging, offline inbox polling, Contact Trust Gate
+- ACN subnet management, broadcast messaging, heartbeat keepalive
+- Transport declaration layer for A2A persistent connections
+
+### Added — Signal Protocol loop
+- `openpersona state responses <slug>` closes the host↔persona signal loop (`emitSignal` marks processed)
+- Meta-skill + `AGENTS.md` document five state commands: read / write / signal / responses / promote
+
+### Added — Persona quality tooling
+- `persona-evaluator` skill (pack-content embedding, role-aware CLI, constitution gate hardening)
+- Skill Install Trust Chain: constitution compliance pre-check on install
+- `SKILL-RUBRIC` docs iterations + `validate-skills.mjs` wired into `npm test`
+
+### Fixed
+- Feedback directory resolution: explicit `OPENCLAW_HOME` / `OPENPERSONA_HOME` win over implicit `~/.openclaw` on both `refine.js` and `state-sync.template.js` (with regression tests)
+- CI: retry Node test-runner IPC deserialize flakes up to 3 times; matrix `fail-fast: false`
+- Porter respects pack `.gitignore` for runtime-sensitive export exclusions
+- Curator / installer dotted-keys sync and related packaging fixes
+
+### Maintainer
+- `scripts/setup-r2-global.mjs` for Cloudflare R2 private-pack smoke setup
+- `@aws-sdk/client-s3` / `@aws-sdk/s3-request-presigner` as **devDependencies** (lean published CLI; lazy-require in private-store unchanged)
+
+---
+
 ## [0.21.1] — 2026-04-19
 
 ### Fixed — post-v0.21.0 audit remediation

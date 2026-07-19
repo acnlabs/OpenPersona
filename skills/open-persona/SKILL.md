@@ -6,7 +6,7 @@ compatibility: "Generated skill packs work with any SKILL.md-compatible agent. C
 allowed-tools: "Bash(npx openpersona:*) Bash(npx clawhub@latest:*) Bash(openclaw:*) Bash(gh:*) Read Write WebFetch"
 metadata:
   author: "openpersona"
-  version: "0.21.1"
+  version: "0.22.0"
   repository: "https://github.com/acnlabs/OpenPersona"
   tags: "persona, agent, skill-pack, meta-skill, agent-agnostic, openclaw"
   installSurface: "instruction-only"

@@ -41,6 +41,7 @@ if (files.length === 0) {
 }
 
 const DESERIALIZE_RE = /Unable to deserialize cloned data/;
+const MAX_DESERIALIZE_ATTEMPTS = 3;
 
 function runTestFile(file) {
   return spawnSync(
@@ -50,12 +51,23 @@ function runTestFile(file) {
   );
 }
 
+function isDeserializeFlake(result) {
+  const combined = `${result.stdout || ''}${result.stderr || ''}`;
+  return (result.status ?? 1) !== 0 && DESERIALIZE_RE.test(combined);
+}
+
 for (const file of files) {
   const rel = path.relative(root, file);
   let result = runTestFile(file);
-  const combined = `${result.stdout || ''}${result.stderr || ''}`;
-  if ((result.status ?? 1) !== 0 && DESERIALIZE_RE.test(combined)) {
-    process.stderr.write(`\n[retry] IPC deserialize flake in ${rel}, re-running once…\n`);
+  let attempt = 1;
+  while (isDeserializeFlake(result) && attempt < MAX_DESERIALIZE_ATTEMPTS) {
+    attempt += 1;
+    process.stderr.write(
+      `\n[retry] IPC deserialize flake in ${rel}, re-running (${attempt}/${MAX_DESERIALIZE_ATTEMPTS})…\n`
+    );
+    // Brief pause — back-to-back worker respawns are more likely to hit the same race.
+    const pauseUntil = Date.now() + 200;
+    while (Date.now() < pauseUntil) { /* spin */ }
     result = runTestFile(file);
   }
   if (result.stdout) process.stdout.write(result.stdout);

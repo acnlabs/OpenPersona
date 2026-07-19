@@ -46,9 +46,12 @@ Both files live in a **feedback directory** resolved from the host's home locati
 The persona's `state-sync.js` resolves the path in this order:
 
 1. `$OPENCLAW_HOME/feedback/` — if env var `OPENCLAW_HOME` is set
-2. `~/.openclaw/feedback/` — if that directory already exists (standard OpenClaw layout)
-3. `$OPENPERSONA_HOME/feedback/` — explicit override for non-OpenClaw runners
+2. `$OPENPERSONA_HOME/feedback/` — if env var `OPENPERSONA_HOME` is set (explicit non-OpenClaw / test override)
+3. `~/.openclaw/feedback/` — if that directory already exists (standard OpenClaw layout)
 4. `~/.openpersona/feedback/` — universal fallback
+
+Explicit environment variables always win over implicit directory discovery. In particular,
+setting `OPENPERSONA_HOME` must not be shadowed by a pre-existing `~/.openclaw` on the machine.
 
 ```
 <feedback-dir>/
@@ -396,11 +399,21 @@ const path = require('path');
 const os = require('os');
 
 // Resolve feedback dir — mirror the same logic as state-sync.js
-const OPENCLAW_DIR = process.env.OPENCLAW_HOME || path.join(os.homedir(), '.openclaw');
-const FALLBACK_DIR = process.env.OPENPERSONA_HOME || path.join(os.homedir(), '.openpersona');
-const FEEDBACK_DIR = (process.env.OPENCLAW_HOME || fs.existsSync(OPENCLAW_DIR))
-  ? path.join(OPENCLAW_DIR, 'feedback')
-  : path.join(FALLBACK_DIR, 'feedback');
+// Explicit env wins: OPENCLAW_HOME → OPENPERSONA_HOME → ~/.openclaw → ~/.openpersona
+function resolveFeedbackDir() {
+  if (process.env.OPENCLAW_HOME) {
+    return path.join(process.env.OPENCLAW_HOME, 'feedback');
+  }
+  if (process.env.OPENPERSONA_HOME) {
+    return path.join(process.env.OPENPERSONA_HOME, 'feedback');
+  }
+  const clawHome = path.join(os.homedir(), '.openclaw');
+  const opHome   = path.join(os.homedir(), '.openpersona');
+  return fs.existsSync(clawHome)
+    ? path.join(clawHome, 'feedback')
+    : path.join(opHome, 'feedback');
+}
+const FEEDBACK_DIR = resolveFeedbackDir();
 
 const SIGNALS_PATH = path.join(FEEDBACK_DIR, 'signals.json');
 const RESPONSES_PATH = path.join(FEEDBACK_DIR, 'signal-responses.json');

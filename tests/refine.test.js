@@ -29,6 +29,7 @@ const {
   refine,
   emitRefinement,
   applyRefinement,
+  resolveFeedbackDir,
 } = require('../lib/lifecycle/refine');
 const { forkPersona } = require('../lib/lifecycle/forker');
 const { generate }    = require('../lib/generator');
@@ -268,7 +269,7 @@ describe('applyRefinement — compliance gate', () => {
     fs.writeFileSync(path.join(skillDir, 'state.json'), JSON.stringify({ eventLog: [] }));
 
     // Write signal-responses.json with a violating behavior guide into the feedback dir
-    // resolveFeedbackDir() checks OPENCLAW_HOME → falls back to OPENPERSONA_HOME
+    // resolveFeedbackDir() prefers explicit OPENPERSONA_HOME when OPENCLAW_HOME is unset
     const feedbackHome = path.join(TMP, 'compliance-home');
     const feedbackDir  = path.join(feedbackHome, 'feedback');
     fs.ensureDirSync(feedbackDir);
@@ -287,13 +288,54 @@ describe('applyRefinement — compliance gate', () => {
     process.env.OPENPERSONA_HOME = feedbackHome;
     delete process.env.OPENCLAW_HOME;
 
-    // Call applyRefinement directly with personaDir — no resolvePersonaDir involved
-    const result = await applyRefinement(skillDir, persona);
-    assert.strictEqual(result.applied, false);
-    assert.ok(Array.isArray(result.violations) && result.violations.length > 0);
+    try {
+      // Call applyRefinement directly with personaDir — no resolvePersonaDir involved
+      const result = await applyRefinement(skillDir, persona);
+      assert.strictEqual(result.applied, false);
+      assert.ok(Array.isArray(result.violations) && result.violations.length > 0);
+    } finally {
+      if (origHome === undefined) delete process.env.OPENPERSONA_HOME;
+      else process.env.OPENPERSONA_HOME = origHome;
+      if (origClaw === undefined) delete process.env.OPENCLAW_HOME;
+      else process.env.OPENCLAW_HOME = origClaw;
+    }
+  });
+});
 
-    process.env.OPENPERSONA_HOME = origHome;
-    if (origClaw !== undefined) process.env.OPENCLAW_HOME = origClaw;
+// ── resolveFeedbackDir precedence ────────────────────────────────────────────
+
+describe('resolveFeedbackDir — env precedence', () => {
+  const fakeHome = path.join(TMP, 'feedback-homedir');
+  const clawDefault = path.join(fakeHome, '.openclaw');
+  const opDefault   = path.join(fakeHome, '.openpersona');
+
+  it('prefers explicit OPENCLAW_HOME over everything', () => {
+    const dir = resolveFeedbackDir(
+      { OPENCLAW_HOME: '/explicit/claw', OPENPERSONA_HOME: '/explicit/op' },
+      fakeHome,
+      (p) => p === clawDefault
+    );
+    assert.strictEqual(dir, path.join('/explicit/claw', 'feedback'));
+  });
+
+  it('prefers explicit OPENPERSONA_HOME over implicit ~/.openclaw', () => {
+    // Regression: machines with ~/.openclaw must not shadow OPENPERSONA_HOME
+    const dir = resolveFeedbackDir(
+      { OPENPERSONA_HOME: '/explicit/op' },
+      fakeHome,
+      (p) => p === clawDefault
+    );
+    assert.strictEqual(dir, path.join('/explicit/op', 'feedback'));
+  });
+
+  it('falls back to ~/.openclaw when it exists and no env is set', () => {
+    const dir = resolveFeedbackDir({}, fakeHome, (p) => p === clawDefault);
+    assert.strictEqual(dir, path.join(clawDefault, 'feedback'));
+  });
+
+  it('falls back to ~/.openpersona when no env and ~/.openclaw is absent', () => {
+    const dir = resolveFeedbackDir({}, fakeHome, () => false);
+    assert.strictEqual(dir, path.join(opDefault, 'feedback'));
   });
 });
 

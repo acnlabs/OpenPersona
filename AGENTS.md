@@ -447,3 +447,21 @@ node --test tests/generator-core.test.js  # Run specific test file
 - If changing the constitution, explain the ethical reasoning in the PR description
 - If changing the generator, verify all presets still generate correctly
 - If changing templates, check that generated SKILL.md output is valid markdown
+
+## Cursor Cloud specific instructions
+
+This repo is checked out as part of a multi-repo Cursor Cloud workspace under `/agent/repos/` (each repo is an independent git remote). The startup update script installs JS dependencies for the four runnable repos (`agentbooks`, `avatar-runtime`, `OpenPersona` via npm; `openpersona-frontend` via pnpm) — no manual install is needed at session start. The other repos are Markdown/persona skill packs or optional Python pipelines (no dependency manifests) and are not runnable services.
+
+Runnable services and how to exercise them (details already in each repo's README/AGENTS.md — not duplicated here):
+
+| Service | Dir | Lint | Test | Run (dev) |
+|---|---|---|---|---|
+| OpenPersona CLI (this repo) | `OpenPersona` | — | `npm test` (node tests + skill validation) | `node bin/cli.js create --preset <slug> --output <dir>` |
+| avatar-runtime HTTP server | `avatar-runtime` | — | `npm run accept:live2d` (needs bridge) | `npm run dev` → port 3721 (mock provider, no key) |
+| openpersona-frontend (Next.js) | `openpersona-frontend` | `pnpm lint` | `pnpm test` (vitest) | `pnpm dev` → port 3000 |
+| agentbooks (lib/CLI) | `agentbooks` | — | `node --test tests/agentbooks.test.js` | library; consumed by OpenPersona |
+
+Non-obvious notes:
+- `agentbooks` and `avatar-runtime` are zero-dependency (`npm install` adds nothing) — they run directly on Node.
+- `openpersona-frontend` needs no real credentials to run in dev: all secrets in `.env.local.example` (Upstash Redis, Auth0/GitHub/HF OAuth, S3) are optional and gate individual features; `pnpm dev` serves `/`, `/skills`, `/datasets` fine without them. pnpm reports "Ignored build scripts" (esbuild/sharp/unrs-resolver) — this is benign; dev server and vitest work without approving them.
+- The OpenPersona CLI writes runtime state under `~/.openpersona` / `~/.agentbooks`; generating into a throwaway dir like `/tmp` keeps the repo clean.

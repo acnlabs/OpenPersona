@@ -21,6 +21,15 @@ metadata:
 
 You are the meta-skill for creating, installing, updating, and publishing agent persona skill packs. Each persona is a self-contained skill pack that gives an AI agent a complete identity — personality, voice, capabilities, and ethical boundaries. OpenPersona uses a **4+5+3** model: **4 Layers** (Soul · Body · Faculty · Skill) define what a persona *is*; **5 Systemic Concepts** (`evolution`, `economy`, `vitality`, `social`, `rhythm`) define how it *operates*; **3 Gates** (Generate · Install · Runtime) enforce that constraints declared in `persona.json` cannot be bypassed at any lifecycle point. → Full model details: `references/ARCHITECTURE.md`
 
+## Scope
+
+| This skill | Adjacent skills — delegate to these |
+| --- | --- |
+| Framework entry point: create, install, manage, publish, run personas | **`persona-evaluator`** — quality audit (4 Layers × 5 Concepts × Constitution gate) |
+| Runner integration protocol (`openpersona state` commands) | **`anyone-skill`** — distill a real person or character into a persona pack |
+| Skill registry (`openpersona skill` commands) | **`brand-persona-skill`** — turn a commercial entity into a brand agent |
+| Evolution, economy, vitality, social, rhythm configuration | **`persona-model-trainer`** — fine-tune a local model on persona data |
+
 ## What You Can Do
 
 1. **Create Persona** — Through conversation, gather requirements and generate a skill pack; write `persona.json` then run `npx openpersona create --config ./persona.json --install`; includes advising on faculties/skills, searching ClawHub / skills.sh for external skills, and writing custom SKILL.md files for missing capabilities
@@ -28,8 +37,8 @@ You are the meta-skill for creating, installing, updating, and publishing agent 
 3. **Manage Personas** — List, update, fork, switch, reset, export/import installed personas
 4. **Publish Persona** — Publish a GitHub-hosted persona pack to [OpenPersona](https://openpersona.co/skills) (the vertical persona directory); optionally also to ClawHub / skills.sh
 5. **Dataset Directory** — Discover and publish Hugging Face persona datasets at [openpersona.co/datasets](https://openpersona.co/datasets) via `openpersona dataset install <owner/repo>` and `openpersona dataset publish <owner/repo>`
-6. **Runner Integration** — Provide runner authors with the four `openpersona state` commands (read / write / signal / promote) for integrating personas at conversation boundaries
-6. **Monitor & Evolve** — Generate evolution reports (`evolve-report`), run soul-memory bridge (`state promote`), run pack refinement (`refine`), interpret vitality scores
+6. **Runner Integration** — Provide runner authors with the five `openpersona state` commands (read / write / signal / responses / promote) for integrating personas at conversation boundaries
+7. **Monitor & Evolve** — Generate evolution reports (`evolve-report`), run soul-memory bridge (`state promote`), run pack refinement (`refine`), interpret vitality scores
 
 ## Available Presets
 
@@ -326,7 +335,7 @@ No additional config needed — A2A discoverability is a baseline capability of 
 
 #### Install & Discover
 
-- **Install:** `npx openpersona install <target>` — install from registry slug or `owner/repo`; `--registry <name>` selects registry (`acnlabs` default)
+- **Install:** `npx openpersona install <target>` — smart router that auto-detects pack type (persona / skill); install from registry slug or `owner/repo`; `--registry <name>` selects registry (`acnlabs` default). Use `openpersona persona install` or `openpersona skill install` for type-specific stable behavior.
 - **Search:** `npx openpersona search <query>` — search personas in the registry
 - **List:** `npx openpersona list` — show all installed personas with active indicator
 
@@ -361,6 +370,18 @@ No additional config needed — A2A discoverability is a baseline capability of 
 #### Community
 
 - **Contribute:** `npx openpersona contribute <slug> [--dry-run]` — submit persona improvements as a PR to the community; `--dry-run` shows diff without creating PR; requires `gh` CLI. → For the full diff review and PR workflow: read `references/CONTRIBUTE.md`
+
+#### Skill Registry (`openpersona skill`)
+
+Manage agent skill packs separately from personas. Skill packs install to `.agents/skills/` and are available to any runner:
+
+- **Install:** `openpersona skill install <owner/repo>` — install a skill pack from GitHub (`owner/repo`, `owner/repo#subpath`, local dir, or local zip)
+- **Update:** `openpersona skill update <slug>` — re-download and overwrite from its recorded source URL
+- **Uninstall:** `openpersona skill uninstall <slug>`
+- **List:** `openpersona skill list` — list installed skills (registry + filesystem scan of `.agents/skills/`)
+- **Search:** `openpersona skill search <query>` — search the OpenPersona skill directory
+- **Publish:** `openpersona skill publish <owner/repo>` — publish a skill pack to openpersona.co/skills
+- **Info:** `openpersona skill info <slug>` — show registry entry + SKILL.md frontmatter for an installed skill
 
 When multiple personas are installed, only one is **active** at a time. All install/uninstall/switch operations maintain a local registry at `~/.openpersona/persona-registry.json`; on OpenClaw, switching replaces the soul injection block in SOUL.md / IDENTITY.md (preserving user-written content outside the markers). **Context Handoff:** On switch, a `handoff.json` is generated with the outgoing persona's relationship stage, mood snapshot, and shared interests — the incoming persona reads it to continue seamlessly. The `export` and `import` commands enable cross-device persona transfer.
 
@@ -440,7 +461,7 @@ npx openpersona search "" --type multi
 
 ## Runner Integration Protocol
 
-Any agent runner integrates with installed personas via four CLI commands called at conversation boundaries — no knowledge of file paths or persona internals needed:
+Any agent runner integrates with installed personas via five CLI commands called at conversation boundaries — no knowledge of file paths or persona internals needed:
 
 ```bash
 # Before conversation starts — load state into agent context
@@ -451,6 +472,9 @@ openpersona state write <slug> '<json-patch>'
 
 # On-demand — emit capability or resource signal to host
 openpersona state signal <slug> <type> '[payload-json]'
+
+# Read (and consume) pending signal responses from the host
+openpersona state responses <slug>
 
 # Soul-Memory Bridge — promote recurring eventLog patterns to evolvedTraits
 openpersona state promote <slug> [--dry-run]
@@ -463,6 +487,8 @@ openpersona state promote <slug> [--dry-run]
 **State write patch**: JSON object; nested fields (`mood`, `relationship`, `speakingStyleDrift`, `interests`) are deep-merged — send only changed sub-fields. Immutable fields (`$schema`, `version`, `personaSlug`, `createdAt`) are protected. `eventLog` entries are appended (capped at 50); each entry: `type`, `trigger`, `delta`, `source`.
 
 **Signal types**: `capability_gap` | `tool_missing` | `scheduling` | `file_io` | `resource_limit` | `agent_communication`
+
+**`state responses`**: reads and consumes pending responses the host wrote to `signal-responses.json`. Returns an array of response objects (each references the original signal by type + timestamp). Call after emitting a signal when you want to check whether the host has replied in the same conversation turn.
 
 Signals are written to a feedback directory resolved from the host's home path (framework-agnostic — works with OpenClaw, Cursor, Claude Code, Codex, or any custom runner). See `layers/body/SIGNAL-PROTOCOL.md` in the framework source for the full host-side contract and integration guide.
 
@@ -515,10 +541,6 @@ This pack is **instruction-only**: there is **no** skill-defined installer that 
 
 If an automated scanner flags "suspicious," it is usually because **persona managers legitimately describe** local state, optional providers, and publishing — not because this file contains malware. Details: [Security & Policy](#security--policy).
 
-## References
-
-For detailed reference material, see the `references/` directory:
-
 ## Companion Skills
 
 
@@ -529,6 +551,7 @@ For detailed reference material, see the `references/` directory:
 | `[brand-persona-skill](https://github.com/acnlabs/brand-persona-skill)` | `openpersona skill install acnlabs/brand-persona-skill` | Turn any commercial entity (shop, clinic, studio, chain) into a brand agent — soul distillation or declaration from scratch, service skills, A2A discoverability, and a service contract |
 | `[persona-model-trainer](https://github.com/acnlabs/persona-model-trainer)` | `openpersona skill install acnlabs/persona-model-trainer` | Fine-tune Gemma-4 (E2B/E4B) locally on distilled data — self-contained model for phones and laptops via Ollama/llama.cpp. Use `--preset gemma4` for one-command optimised training (lora-rank=16, alpha=rank, lora-layers=16, warmup=0.1). |
 | `[persona-knowledge](https://github.com/acnlabs/persona-knowledge)`             | `openpersona skill install acnlabs/persona-knowledge`       | Persistent, searchable persona knowledge base — MemPalace storage + Knowledge Graph + Karpathy LLM Wiki + training/ export |
+| `[secondme-skill](https://github.com/acnlabs/secondme-skill)`                   | `openpersona skill install acnlabs/secondme-skill`          | Local-first pipeline for building your AI Second Me — ingest chats/notes/writing, distill identity, build private knowledge base, train a model, stay in control of every stage |
 
 
 ---

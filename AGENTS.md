@@ -246,7 +246,7 @@ This is the runtime expression of `body.interface`: it describes how a persona *
 
 ### Runner Integration Protocol
 
-Any agent runner integrates with OpenPersona personas via four CLI commands. The runner calls these at conversation boundaries — the persona's state is managed automatically without the runner knowing about installation paths or file layout:
+Any agent runner integrates with OpenPersona personas via five CLI commands. The runner calls these at conversation boundaries — the persona's state is managed automatically without the runner knowing about installation paths or file layout:
 
 ```bash
 # Before conversation starts — inject state into agent context
@@ -257,6 +257,9 @@ openpersona state write <slug> '<json-patch>'
 
 # On-demand — emit capability/resource signal to host
 openpersona state signal <slug> <type> '[payload-json]'
+
+# On-demand — read (and consume) pending host replies from signal-responses.json
+openpersona state responses <slug>
 
 # Soul-Memory Bridge — promote recurring eventLog patterns to evolvedTraits
 openpersona state promote <slug> [--dry-run]

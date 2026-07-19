@@ -33,6 +33,42 @@ describe('state-sync script generation', () => {
     assert.ok(content.includes('writeState'), 'script must contain writeState function');
     assert.ok(content.includes('emitSignal'), 'script must contain emitSignal function');
     assert.ok(content.includes('capability_gap'), 'script must list valid signal types');
+    assert.ok(
+      content.includes('OPENPERSONA_HOME') && content.includes('resolveFeedbackDir'),
+      'script must resolve feedback dir with explicit OPENPERSONA_HOME precedence'
+    );
+
+    await fs.remove(TMP_SS);
+  });
+
+  it('state-sync.js prefers OPENPERSONA_HOME over implicit ~/.openclaw', async () => {
+    const persona = {
+      personaName: 'FeedbackHomeTest',
+      slug: 'feedback-home-test',
+      bio: 'feedback home precedence tester',
+      personality: 'precise',
+      speakingStyle: 'Direct',
+    };
+    await fs.ensureDir(TMP_SS);
+    const { skillDir } = await generate(persona, TMP_SS);
+
+    const { execSync } = require('child_process');
+    const syncScript = path.join(skillDir, 'scripts', 'state-sync.js');
+    const opHome = path.join(TMP_SS, 'op-home-explicit');
+    const env = { ...process.env, OPENPERSONA_HOME: opHome };
+    delete env.OPENCLAW_HOME;
+
+    execSync(`node "${syncScript}" signal capability_gap '{"need":"test"}'`, {
+      encoding: 'utf-8',
+      cwd: skillDir,
+      env,
+    });
+
+    const signalsPath = path.join(opHome, 'feedback', 'signals.json');
+    assert.ok(
+      fs.existsSync(signalsPath),
+      'signals.json must land under OPENPERSONA_HOME even when ~/.openclaw exists on the machine'
+    );
 
     await fs.remove(TMP_SS);
   });

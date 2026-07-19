@@ -16,12 +16,22 @@ const os = require('os');
 
 const PERSONA_DIR = path.resolve(__dirname, '..');
 const STATE_PATH = path.join(PERSONA_DIR, 'state.json');
-// Signals: use OPENCLAW_HOME if explicitly set or ~/.openclaw exists; else fall back to ~/.openpersona
-const OPENCLAW_DIR = process.env.OPENCLAW_HOME || path.join(os.homedir(), '.openclaw');
-const PERSONA_DIR_BASE = process.env.OPENPERSONA_HOME || path.join(os.homedir(), '.openpersona');
-const FEEDBACK_DIR = (process.env.OPENCLAW_HOME || fs.existsSync(OPENCLAW_DIR))
-  ? path.join(OPENCLAW_DIR, 'feedback')
-  : path.join(PERSONA_DIR_BASE, 'feedback');
+// Signals: explicit env wins over implicit default-directory discovery
+//   OPENCLAW_HOME → OPENPERSONA_HOME → ~/.openclaw (if exists) → ~/.openpersona
+function resolveFeedbackDir() {
+  if (process.env.OPENCLAW_HOME) {
+    return path.join(process.env.OPENCLAW_HOME, 'feedback');
+  }
+  if (process.env.OPENPERSONA_HOME) {
+    return path.join(process.env.OPENPERSONA_HOME, 'feedback');
+  }
+  const clawHome = path.join(os.homedir(), '.openclaw');
+  const opHome   = path.join(os.homedir(), '.openpersona');
+  return fs.existsSync(clawHome)
+    ? path.join(clawHome, 'feedback')
+    : path.join(opHome, 'feedback');
+}
+const FEEDBACK_DIR = resolveFeedbackDir();
 const SIGNALS_PATH = path.join(FEEDBACK_DIR, 'signals.json');
 const SIGNAL_RESPONSES_PATH = path.join(FEEDBACK_DIR, 'signal-responses.json');
 

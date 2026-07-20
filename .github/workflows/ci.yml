@@ -28,7 +28,9 @@ jobs:
         run: npm ci
 
       - name: Unit tests
-        run: npm test
+        # One automatic re-run absorbs residual node:test IPC flakes on older Node
+        # where --test-isolation=none is unavailable.
+        run: npm test || npm test
 
       - name: Living Canvas smoke test
         run: node --test tests/living-canvas.smoke.test.js

@@ -7,6 +7,9 @@ Adapters that turn corpus rows into `SeedProfile`. Orchestration: `../SKILL.md`.
 | Provider id | Family | Status | HF repos |
 |-------------|--------|--------|----------|
 | `matraix-persona-1m` | attribute-census | ga | `MatrAIx2026/MatrAIx_Persona_1M` |
+| `nemotron-personas-usa` | attribute-census | ga | `nvidia/Nemotron-Personas-USA` |
+
+Keep `frontend/lib/persona-seed-capable.json` in sync when adding `hfRepos` (datasets UI badge).
 
 `openpersona.co/datasets` may list many more corpora. Only registry rows are usable with persona-seed.
 

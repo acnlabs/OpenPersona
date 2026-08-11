@@ -62,16 +62,17 @@ Set `SEED_DIR` to this skill directory (path containing `SKILL.md`).
 
 Default corpus is the offline **fixture** (5 rows) under `providers/matraix-persona-1m/fixtures/`. `capabilities()` / provenance report `corpusMode: "fixture"` and a fixture dataset id — not the Hugging Face 1M release.
 
-To use a larger decoded corpus:
+Larger corpora (per provider):
 
 ```bash
-# optional download + decode first N rows (needs python3 + pyarrow [+ huggingface-cli])
+# MatrAIx — optional download + decode (python3 + pyarrow [+ huggingface-cli])
 bash ${SEED_DIR}/scripts/decode-matraix.sh --download --limit 1000
-export MATRAIX_CORPUS_PATH=./matraix-1m.decoded.json   # or .jsonl
-node ${SEED_DIR}/scripts/prepare-corpus.js --validate "$MATRAIX_CORPUS_PATH" --limit 20
-```
+export MATRAIX_CORPUS_PATH=./matraix-1m.decoded.json
 
-Decoder: `providers/matraix-persona-1m/scripts/decode_parquet.py`
+# Nemotron Personas USA — export HF rows to JSON/JSONL, then:
+export NEMOTRON_CORPUS_PATH=./nemotron-usa.jsonl
+node ${SEED_DIR}/scripts/search.js --repo nvidia/Nemotron-Personas-USA --intent '{"domain":["software"]}'
+```
 
 Empty filter results return `[]` (no silent unfiltered fallback). Re-check intent if search is empty.
 

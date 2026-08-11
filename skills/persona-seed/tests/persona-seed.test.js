@@ -7,6 +7,7 @@ const os = require('os');
 const path = require('path');
 
 const matraix = require('../providers/matraix-persona-1m/provider');
+const nemotron = require('../providers/nemotron-personas-usa/provider');
 const { mapSeedToPersona, slugify } = require('../scripts/map-seed-to-persona');
 const { writeProvenance } = require('../scripts/write-provenance');
 const { run: runPipeline } = require('../scripts/run-pipeline');
@@ -210,7 +211,44 @@ describe('persona-seed / registry', () => {
   it('rejects unknown provider ids', () => {
     assert.throws(() => resolveEntry('not-a-provider'), /Unknown provider/);
   });
+
+  it('resolves Nemotron HF repo and stays in sync with frontend badge list', () => {
+    assert.equal(resolveEntry('nvidia/Nemotron-Personas-USA').id, 'nemotron-personas-usa');
+    const frontendPath = path.join(
+      __dirname,
+      '../../../frontend/lib/persona-seed-capable.json'
+    );
+    const frontend = JSON.parse(fs.readFileSync(frontendPath, 'utf8'));
+    const regRepos = new Set(seedCapableRepos().map((r) => r.repo.toLowerCase()));
+    for (const row of frontend) {
+      assert.ok(regRepos.has(String(row.repo).toLowerCase()), `missing registry for ${row.repo}`);
+    }
+    for (const row of seedCapableRepos()) {
+      assert.ok(
+        frontend.some((f) => String(f.repo).toLowerCase() === row.repo.toLowerCase()),
+        `frontend badge list missing ${row.repo}`
+      );
+    }
+  });
 });
+
+describe('persona-seed / nemotron-personas-usa', () => {
+  it('searches fixture by domain and maps to SeedProfile', () => {
+    const hits = nemotron.search({ domain: ['software'], limit: 5 });
+    assert.ok(hits.some((h) => h.id === 'nemo-fixture-001'));
+    const seed = nemotron.toSeed(nemotron.fetch('nemo-fixture-001'));
+    assert.equal(seed.provenance.provider, 'nemotron-personas-usa');
+    assert.equal(seed.provenance.corpusMode, 'fixture');
+    assert.ok(seed.identity.summary.length > 0);
+    assert.ok(seed.gaps.includes('personaName'));
+  });
+
+  it('flags healthcare-sensitive occupations', () => {
+    const seed = nemotron.toSeed(nemotron.fetch('nemo-fixture-003'));
+    assert.ok(seed.constraints.sensitiveFlags.includes('healthcare_domain'));
+  });
+});
+
 
 describe('persona-seed / jsonl corpus', () => {
   it('search works when MATRAIX_CORPUS_PATH is jsonl', () => {

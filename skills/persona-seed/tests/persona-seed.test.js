@@ -251,6 +251,11 @@ describe('persona-seed / nemotron-personas-usa', () => {
     assert.ok(wa.every((h) => h.id === 'nemo-fixture-001'));
     const orHits = nemotron.search({ region: ['OR'], limit: 10 });
     assert.deepEqual(orHits, []);
+    // Long intent must not match via short state code substring (aware ⊃ wa)
+    assert.deepEqual(nemotron.search({ region: ['aware'], limit: 10 }), []);
+    // Country short codes must still match USA rows
+    const usa = nemotron.search({ region: ['USA'], limit: 10 });
+    assert.ok(usa.length >= 1);
   });
 
   it('locale en matches United States country values', () => {

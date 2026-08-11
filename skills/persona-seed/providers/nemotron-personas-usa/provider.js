@@ -109,6 +109,15 @@ function isUsaCountry(country) {
   );
 }
 
+/** Geo field match: exact, or substring only when both sides are long enough. */
+function geoFieldMatches(want, field) {
+  if (!field) return false;
+  if (field === want) return true;
+  // Avoid short state codes (WA/OR/CA) matching inside unrelated words (aware/history)
+  if (want.length <= 3 || field.length <= 3) return false;
+  return field.includes(want) || want.includes(field);
+}
+
 /** Match region intent against city/state/country only (not full haystack). */
 function regionMatches(intentRegion, row) {
   if (!intentRegion) return false;
@@ -117,15 +126,17 @@ function regionMatches(intentRegion, row) {
   const state = norm(row.state);
   const country = norm(row.country);
 
-  // Short codes (WA, OR, CA, NY…): exact state/city only — avoid "or" in "new york"
+  // Short codes (WA, OR, CA, NY, US…): exact city/state/country only
   if (want.length <= 3) {
-    return state === want || city === want;
+    if (state === want || city === want || country === want) return true;
+    if (want === 'us' || want === 'usa') return isUsaCountry(row.country);
+    return false;
   }
 
-  if (city && (city === want || city.includes(want) || want.includes(city))) return true;
-  if (state && (state === want || state.includes(want) || want.includes(state))) return true;
-  if (country && (country === want || country.includes(want) || want.includes(country))) return true;
-  if (isUsaCountry(row.country) && (want === 'usa' || want === 'united states')) {
+  if (geoFieldMatches(want, city) || geoFieldMatches(want, state) || geoFieldMatches(want, country)) {
+    return true;
+  }
+  if (isUsaCountry(row.country) && (want === 'united states' || want === 'united states of america')) {
     return true;
   }
   return false;

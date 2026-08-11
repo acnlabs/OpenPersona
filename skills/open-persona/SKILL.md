@@ -27,8 +27,9 @@ You are the meta-skill for creating, installing, updating, and publishing agent 
 | --- | --- |
 | Framework entry point: create, install, manage, publish, run personas | **`persona-evaluator`** — quality audit (4 Layers × 5 Concepts × Constitution gate) |
 | Runner integration protocol (`openpersona state` commands) | **`anyone-skill`** — distill a real person or character into a persona pack |
-| Skill registry (`openpersona skill` commands) | **`brand-persona-skill`** — turn a commercial entity into a brand agent |
-| Evolution, economy, vitality, social, rhythm configuration | **`persona-model-trainer`** — fine-tune a local model on persona data |
+| Skill registry (`openpersona skill` commands) | **`persona-seed`** — sample an archetype from a population corpus (e.g. MatrAIx Persona 1M fixture / decoded JSON) |
+| Evolution, economy, vitality, social, rhythm configuration | **`brand-persona-skill`** — turn a commercial entity into a brand agent |
+| | **`persona-model-trainer`** — fine-tune a local model on persona data |
 
 ## What You Can Do
 
@@ -58,13 +59,15 @@ npx openpersona create
 
 When a user asks you to create a persona (e.g. "make me a coding mentor", "build a companion persona"), follow this playbook:
 
-### Step 1 — Decide: preset or custom?
+### Step 1 — Decide: preset, corpus seed, distillation, or custom?
 
 
 | User request                                                                                                 | Action                                                              |
 | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
 | Matches an existing preset (`ai-girlfriend`, `life-assistant`, `stoic-mentor`, `samantha`, `health-butler`…) | Use `--preset <name>` directly — skip to Step 4                     |
-| Specific role / domain / personality                                                                         | Gather 3 required inputs (Step 2), then write persona.json (Step 3) |
+| Wants a pack sampled from a population corpus / MatrAIx / “pick a seed profile”                              | Delegate to **`persona-seed`** (`skills/persona-seed/SKILL.md`) — then return here for install/manage |
+| Distill a specific real person or named character from evidence                                              | Delegate to **`anyone-skill`**                                      |
+| Specific role / domain / personality (author from scratch)                                                   | Gather 3 required inputs (Step 2), then write persona.json (Step 3) |
 
 
 ### Step 2 — Gather minimum required inputs (3 questions max)
@@ -548,6 +551,7 @@ If an automated scanner flags "suspicious," it is usually because **persona mana
 | --------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `[persona-evaluator](https://github.com/acnlabs/persona-evaluator)`         | `openpersona skill install acnlabs/persona-evaluator`     | Score any persona pack across 4 Layers + 5 Systemic Concepts — 9-dimension quality audit, constitution compliance gate, and actionable improvement recommendations (`npx openpersona evaluate <slug>`) |
 | `[anyone-skill](https://github.com/acnlabs/anyone-skill)`                   | `openpersona skill install acnlabs/anyone-skill`          | Distill any person or character (self, personal, public, historical, fictional, archetype) into a persona skill pack       |
+| `persona-seed` (in-repo: `skills/persona-seed`) | local / `npx skills add` when published | Sample archetype seeds from pluggable corpora (first provider: MatrAIx Persona 1M) → SeedProfile → `persona.json` → create |
 | `[brand-persona-skill](https://github.com/acnlabs/brand-persona-skill)` | `openpersona skill install acnlabs/brand-persona-skill` | Turn any commercial entity (shop, clinic, studio, chain) into a brand agent — soul distillation or declaration from scratch, service skills, A2A discoverability, and a service contract |
 | `[persona-model-trainer](https://github.com/acnlabs/persona-model-trainer)` | `openpersona skill install acnlabs/persona-model-trainer` | Fine-tune Gemma-4 (E2B/E4B) locally on distilled data — self-contained model for phones and laptops via Ollama/llama.cpp. Use `--preset gemma4` for one-command optimised training (lora-rank=16, alpha=rank, lora-layers=16, warmup=0.1). |
 | `[persona-knowledge](https://github.com/acnlabs/persona-knowledge)`             | `openpersona skill install acnlabs/persona-knowledge`       | Persistent, searchable persona knowledge base — MemPalace storage + Knowledge Graph + Karpathy LLM Wiki + training/ export |

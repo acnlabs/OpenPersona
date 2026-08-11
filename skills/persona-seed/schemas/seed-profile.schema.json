@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openpersona.org/schemas/persona-seed/seed-profile.schema.json",
+  "title": "SeedProfile",
+  "description": "Provider-agnostic intermediate persona seed. Mapped to persona.json by the shared mapper; never fed directly to the generator.",
+  "type": "object",
+  "required": ["schemaVersion", "provenance", "identity", "character", "gaps"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["provider", "recordId"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string" },
+        "recordId": { "type": "string" },
+        "dataset": { "type": "string" },
+        "corpusMode": {
+          "type": "string",
+          "enum": ["fixture", "external"],
+          "description": "fixture = offline sample rows; external = MATRAIX_CORPUS_PATH (or future HF-backed index)"
+        },
+        "licenseNotes": { "type": "string" },
+        "groundingType": {
+          "type": "string",
+          "enum": ["synthetic", "human_grounded", "unknown"]
+        },
+        "retrievedAt": { "type": "string" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "required": ["summary"],
+      "additionalProperties": false,
+      "properties": {
+        "suggestedName": { "type": ["string", "null"] },
+        "suggestedSlug": { "type": ["string", "null"] },
+        "summary": { "type": "string", "minLength": 1 },
+        "locale": { "type": "array", "items": { "type": "string" } },
+        "region": { "type": ["string", "null"] },
+        "ageBracket": { "type": ["string", "null"] },
+        "occupation": { "type": ["string", "null"] },
+        "education": { "type": ["string", "null"] }
+      }
+    },
+    "character": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "traits": { "type": "array", "items": { "type": "string" } },
+        "values": { "type": "array", "items": { "type": "string" } },
+        "motivations": { "type": "array", "items": { "type": "string" } },
+        "speakingHints": { "type": "array", "items": { "type": "string" } },
+        "interests": { "type": "array", "items": { "type": "string" } },
+        "riskTolerance": { "type": ["string", "null"] },
+        "formalityBaseline": { "type": ["number", "null"] }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domains": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "tools": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hardExclusions": { "type": "array", "items": { "type": "string" } },
+        "sensitiveFlags": { "type": "array", "items": { "type": "string" } },
+        "suggestedImmutableTraits": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attributeHighlights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "field": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          }
+        },
+        "rawDescriptions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Fields the agent/user must still fill before create (e.g. personaName, role, boundaries)."
+    }
+  }
+}

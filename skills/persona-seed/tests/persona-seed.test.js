@@ -212,21 +212,18 @@ describe('persona-seed / registry', () => {
     assert.throws(() => resolveEntry('not-a-provider'), /Unknown provider/);
   });
 
-  it('resolves Nemotron HF repo and stays in sync with frontend badge list', () => {
+  it('resolves Nemotron HF repo and stays in sync with seed-capable.public.json', () => {
     assert.equal(resolveEntry('nvidia/Nemotron-Personas-USA').id, 'nemotron-personas-usa');
-    const frontendPath = path.join(
-      __dirname,
-      '../../../frontend/lib/persona-seed-capable.json'
-    );
-    const frontend = JSON.parse(fs.readFileSync(frontendPath, 'utf8'));
+    const publicPath = path.join(__dirname, '..', 'providers', 'seed-capable.public.json');
+    const published = JSON.parse(fs.readFileSync(publicPath, 'utf8'));
     const regRepos = new Set(seedCapableRepos().map((r) => r.repo.toLowerCase()));
-    for (const row of frontend) {
+    for (const row of published) {
       assert.ok(regRepos.has(String(row.repo).toLowerCase()), `missing registry for ${row.repo}`);
     }
     for (const row of seedCapableRepos()) {
       assert.ok(
-        frontend.some((f) => String(f.repo).toLowerCase() === row.repo.toLowerCase()),
-        `frontend badge list missing ${row.repo}`
+        published.some((f) => String(f.repo).toLowerCase() === row.repo.toLowerCase()),
+        `seed-capable.public.json missing ${row.repo}`
       );
     }
   });

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openpersona.org/schemas/persona-seed/intent.schema.json",
+  "title": "PersonaSeedIntent",
+  "description": "Normalized user intent for searching persona seed providers.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "roleHint": {
+      "type": "string",
+      "description": "OpenPersona role hint (companion, mentor, assistant, …). Not used as a hard MatrAIx filter."
+    },
+    "domain": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Domain / occupation keywords to match against seed capabilities."
+    },
+    "traits": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Desired personality / value keywords."
+    },
+    "locale": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Language / locale codes or names (e.g. en, zh, Spanish)."
+    },
+    "region": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Preferred regions (soft filter)."
+    },
+    "ageBracket": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "exclude": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Keywords or constraint flags to avoid."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20,
+      "default": 5
+    },
+    "provider": {
+      "type": "string",
+      "description": "Provider id. Default: matraix-persona-1m when only one is installed."
+    },
+    "query": {
+      "type": "string",
+      "description": "Free-text user request; agent may leave structured fields empty and rely on rerank."
+    }
+  }
+}

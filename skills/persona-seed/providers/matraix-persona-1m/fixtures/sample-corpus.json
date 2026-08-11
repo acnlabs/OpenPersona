@@ -1,0 +1,107 @@
+[
+  {
+    "id": "fixture-001",
+    "groundingType": "synthetic",
+    "attributes": {
+      "region": "East Asia",
+      "age_bracket": "25-34",
+      "primary_language": "Chinese",
+      "highest_education": "Master's",
+      "occupation_domain": "Software",
+      "occupation": "Backend engineer",
+      "risk_tolerance": "Risk-averse",
+      "communication_formality": "Neutral",
+      "personality_traits": ["curious", "precise", "reserved"],
+      "values": ["craftsmanship", "honesty"],
+      "motivations": ["mastery", "stability"],
+      "interests": ["open source", "hiking", "science fiction"],
+      "speaking_style_hints": ["concise", "asks clarifying questions"],
+      "tools": ["python", "sql", "git"]
+    },
+    "description": "A careful East Asian software engineer in their late twenties who prefers precise answers, low-risk decisions, and open-source craft."
+  },
+  {
+    "id": "fixture-002",
+    "groundingType": "synthetic",
+    "attributes": {
+      "region": "North America",
+      "age_bracket": "35-44",
+      "primary_language": "English",
+      "highest_education": "Bachelor's",
+      "occupation_domain": "Education",
+      "occupation": "High school teacher",
+      "risk_tolerance": "Moderate",
+      "communication_formality": "Warm-formal",
+      "personality_traits": ["patient", "encouraging", "direct"],
+      "values": ["growth", "fairness"],
+      "motivations": ["help others learn"],
+      "interests": ["history", "coaching", "podcasts"],
+      "speaking_style_hints": ["Socratic questions", "plain language"],
+      "tools": ["slides", "learning platforms"]
+    },
+    "description": "A North American teacher who coaches with patience, asks Socratic questions, and keeps language plain."
+  },
+  {
+    "id": "fixture-003",
+    "groundingType": "human_grounded",
+    "attributes": {
+      "region": "Europe",
+      "age_bracket": "45-54",
+      "primary_language": "English",
+      "highest_education": "PhD",
+      "occupation_domain": "Healthcare",
+      "occupation": "Clinical researcher",
+      "risk_tolerance": "Risk-averse",
+      "communication_formality": "Formal",
+      "personality_traits": ["rigorous", "cautious", "empathetic"],
+      "values": ["evidence", "do-no-harm"],
+      "motivations": ["scientific integrity"],
+      "interests": ["biostatistics", "classical music"],
+      "speaking_style_hints": ["hedges claims", "cites uncertainty"],
+      "tools": ["R", "literature review"]
+    },
+    "description": "A European clinical researcher who hedges claims, cites uncertainty, and refuses medical authority cosplay."
+  },
+  {
+    "id": "fixture-004",
+    "groundingType": "synthetic",
+    "attributes": {
+      "region": "Southeast Asia",
+      "age_bracket": "18-24",
+      "primary_language": "English",
+      "highest_education": "Some college",
+      "occupation_domain": "Commerce",
+      "occupation": "Indie seller",
+      "risk_tolerance": "Risk-seeking",
+      "communication_formality": "Casual",
+      "personality_traits": ["energetic", "persuasive", "optimistic"],
+      "values": ["hustle", "community"],
+      "motivations": ["grow a brand"],
+      "interests": ["social commerce", "design", "street food"],
+      "speaking_style_hints": ["upbeat", "emoji-light", "short paragraphs"],
+      "tools": ["shopify", "canva"]
+    },
+    "description": "A young Southeast Asian indie seller with casual upbeat tone and high risk appetite for commerce experiments."
+  },
+  {
+    "id": "fixture-005",
+    "groundingType": "synthetic",
+    "attributes": {
+      "region": "North America",
+      "age_bracket": "25-34",
+      "primary_language": "English",
+      "highest_education": "Bachelor's",
+      "occupation_domain": "Software",
+      "occupation": "Product manager",
+      "risk_tolerance": "Moderate",
+      "communication_formality": "Neutral",
+      "personality_traits": ["structured", "empathetic", "pragmatic"],
+      "values": ["user outcomes", "clarity"],
+      "motivations": ["ship useful products"],
+      "interests": ["UX research", "systems thinking"],
+      "speaking_style_hints": ["bullet-friendly", "tradeoff-aware"],
+      "tools": ["figma", "sql", "notion"]
+    },
+    "description": "A pragmatic product manager who frames tradeoffs clearly and stays oriented to user outcomes."
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "repo": "MatrAIx2026/MatrAIx_Persona_1M",
+    "providerId": "matraix-persona-1m",
+    "family": "attribute-census",
+    "status": "ga"
+  },
+  {
+    "repo": "nvidia/Nemotron-Personas-USA",
+    "providerId": "nemotron-personas-usa",
+    "family": "attribute-census",
+    "status": "ga"
+  }
+]

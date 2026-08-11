@@ -7,6 +7,7 @@ const os = require('os');
 const path = require('path');
 
 const matraix = require('../providers/matraix-persona-1m/provider');
+const nemotron = require('../providers/nemotron-personas-usa/provider');
 const { mapSeedToPersona, slugify } = require('../scripts/map-seed-to-persona');
 const { writeProvenance } = require('../scripts/write-provenance');
 const { run: runPipeline } = require('../scripts/run-pipeline');
@@ -210,7 +211,77 @@ describe('persona-seed / registry', () => {
   it('rejects unknown provider ids', () => {
     assert.throws(() => resolveEntry('not-a-provider'), /Unknown provider/);
   });
+
+  it('resolves Nemotron HF repo and stays in sync with seed-capable.public.json', () => {
+    assert.equal(resolveEntry('nvidia/Nemotron-Personas-USA').id, 'nemotron-personas-usa');
+    const publicPath = path.join(__dirname, '..', 'providers', 'seed-capable.public.json');
+    const published = JSON.parse(fs.readFileSync(publicPath, 'utf8'));
+    const regRepos = new Set(seedCapableRepos().map((r) => r.repo.toLowerCase()));
+    for (const row of published) {
+      assert.ok(regRepos.has(String(row.repo).toLowerCase()), `missing registry for ${row.repo}`);
+    }
+    for (const row of seedCapableRepos()) {
+      assert.ok(
+        published.some((f) => String(f.repo).toLowerCase() === row.repo.toLowerCase()),
+        `seed-capable.public.json missing ${row.repo}`
+      );
+    }
+  });
 });
+
+describe('persona-seed / nemotron-personas-usa', () => {
+  it('searches fixture by domain and maps to SeedProfile', () => {
+    const hits = nemotron.search({ domain: ['software'], limit: 5 });
+    assert.ok(hits.some((h) => h.id === 'nemo-fixture-001'));
+    const seed = nemotron.toSeed(nemotron.fetch('nemo-fixture-001'));
+    assert.equal(seed.provenance.provider, 'nemotron-personas-usa');
+    assert.equal(seed.provenance.corpusMode, 'fixture');
+    assert.ok(seed.identity.summary.length > 0);
+    assert.ok(seed.gaps.includes('personaName'));
+  });
+
+  it('flags healthcare-sensitive occupations', () => {
+    const seed = nemotron.toSeed(nemotron.fetch('nemo-fixture-003'));
+    assert.ok(seed.constraints.sensitiveFlags.includes('healthcare_domain'));
+  });
+
+  it('region filter uses geo fields only (no haystack false positives)', () => {
+    // "WA" must not match via substring inside "software"
+    const wa = nemotron.search({ region: ['WA'], limit: 10 });
+    assert.ok(wa.every((h) => h.id === 'nemo-fixture-001'));
+    const orHits = nemotron.search({ region: ['OR'], limit: 10 });
+    assert.deepEqual(orHits, []);
+    // Long intent must not match via short state code substring (aware ⊃ wa)
+    assert.deepEqual(nemotron.search({ region: ['aware'], limit: 10 }), []);
+    // Country short codes must still match USA rows
+    const usa = nemotron.search({ region: ['USA'], limit: 10 });
+    assert.ok(usa.length >= 1);
+  });
+
+  it('locale en matches United States country values', () => {
+    const prev = process.env.NEMOTRON_CORPUS_PATH;
+    const tmp = path.join(os.tmpdir(), `nemo-usa-${Date.now()}.json`);
+    const row = {
+      ...nemotron.fetch('nemo-fixture-001'),
+      uuid: 'nemo-united-states',
+      country: 'United States',
+    };
+    fs.writeFileSync(tmp, `${JSON.stringify([row])}\n`);
+    process.env.NEMOTRON_CORPUS_PATH = tmp;
+    nemotron.resetCorpusCache();
+    try {
+      const hits = nemotron.search({ locale: ['en'], limit: 5 });
+      assert.equal(hits.length, 1);
+      assert.equal(hits[0].id, 'nemo-united-states');
+    } finally {
+      if (prev === undefined) delete process.env.NEMOTRON_CORPUS_PATH;
+      else process.env.NEMOTRON_CORPUS_PATH = prev;
+      nemotron.resetCorpusCache();
+      fs.rmSync(tmp, { force: true });
+    }
+  });
+});
+
 
 describe('persona-seed / jsonl corpus', () => {
   it('search works when MATRAIX_CORPUS_PATH is jsonl', () => {

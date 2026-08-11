@@ -19,6 +19,18 @@
       ],
       "status": "ga",
       "notes": "Fixture offline by default; set MATRAIX_CORPUS_PATH for decoded JSON/JSONL."
+    },
+    {
+      "id": "nemotron-personas-usa",
+      "family": "attribute-census",
+      "name": "Nemotron Personas USA",
+      "module": "./nemotron-personas-usa/provider.js",
+      "hfRepos": ["nvidia/Nemotron-Personas-USA"],
+      "directoryUrls": [
+        "https://openpersona.co/datasets/nvidia/nemotron-personas-usa"
+      ],
+      "status": "ga",
+      "notes": "Fixture offline by default; set NEMOTRON_CORPUS_PATH for JSON/JSONL export of HF rows."
     }
   ]
 }

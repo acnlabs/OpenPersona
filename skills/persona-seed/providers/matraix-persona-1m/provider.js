@@ -32,6 +32,17 @@ function resetCorpusCache() {
   corpusCache = null;
 }
 
+function loadJsonl(filePath) {
+  const text = fs.readFileSync(filePath, 'utf8');
+  const rows = [];
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    rows.push(JSON.parse(trimmed));
+  }
+  return rows;
+}
+
 function loadCorpus() {
   const resolved = corpusPath();
   const stat = fs.statSync(resolved);
@@ -43,10 +54,17 @@ function loadCorpus() {
     return corpusCache.data;
   }
 
-  const raw = fs.readFileSync(resolved, 'utf8');
-  const data = JSON.parse(raw);
+  let data;
+  if (resolved.endsWith('.jsonl')) {
+    data = loadJsonl(resolved);
+  } else {
+    const raw = fs.readFileSync(resolved, 'utf8');
+    data = JSON.parse(raw);
+  }
   if (!Array.isArray(data)) {
-    throw new Error(`matraix-persona-1m: corpus must be a JSON array: ${resolved}`);
+    throw new Error(
+      `matraix-persona-1m: corpus must be a JSON array or .jsonl: ${resolved}`
+    );
   }
   corpusCache = { path: resolved, mtimeMs: stat.mtimeMs, data };
   return data;

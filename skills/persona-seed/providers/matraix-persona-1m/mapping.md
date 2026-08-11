@@ -30,7 +30,7 @@ MatrAIx Persona 1M stores ~1,290 categorical attributes (packed in the HF releas
 
 - Do **not** set OpenPersona `sourceIdentity` (archetype / synthetic seed).
 - Do **not** invent `personaName` in the adapter; leave for agent + user.
-- Full HF parquet decode is v2; v1 uses fixtures or a decoded JSON corpus path via `MATRAIX_CORPUS_PATH`.
+- Packed HF Parquet → fixture-shaped JSON/JSONL via `scripts/decode_parquet.py` (or `skills/persona-seed/scripts/decode-matraix.sh`).
 
 ## Dataset / corpusMode
 

@@ -178,3 +178,33 @@ describe('persona-seed / prepare-corpus', () => {
     assert.equal(result.count, 5);
   });
 });
+
+describe('persona-seed / jsonl corpus', () => {
+  it('search works when MATRAIX_CORPUS_PATH is jsonl', () => {
+    const jsonlPath = path.join(os.tmpdir(), `persona-seed-corpus-${Date.now()}.jsonl`);
+    const fixture = path.join(
+      __dirname,
+      '..',
+      'providers',
+      'matraix-persona-1m',
+      'fixtures',
+      'sample-corpus.json'
+    );
+    const rows = JSON.parse(fs.readFileSync(fixture, 'utf8'));
+    fs.writeFileSync(jsonlPath, rows.map((r) => JSON.stringify(r)).join('\n') + '\n');
+    const prev = process.env.MATRAIX_CORPUS_PATH;
+    process.env.MATRAIX_CORPUS_PATH = jsonlPath;
+    matraix.resetCorpusCache();
+    try {
+      const caps = matraix.capabilities();
+      assert.equal(caps.corpusMode, 'external');
+      const hits = matraix.search({ domain: ['software'], traits: ['precise'], limit: 3 });
+      assert.ok(hits.some((h) => h.id === 'fixture-001'));
+    } finally {
+      if (prev === undefined) delete process.env.MATRAIX_CORPUS_PATH;
+      else process.env.MATRAIX_CORPUS_PATH = prev;
+      matraix.resetCorpusCache();
+      fs.rmSync(jsonlPath, { force: true });
+    }
+  });
+});

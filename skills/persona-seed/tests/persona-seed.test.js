@@ -50,6 +50,12 @@ describe('persona-seed / matraix-persona-1m', () => {
     assert.ok(!hits.some((h) => h.id === 'fixture-005'));
   });
 
+  it('search locale codes match primary_language names', () => {
+    const hits = matraix.search({ locale: ['zh'], limit: 5 });
+    assert.ok(hits.some((h) => h.id === 'fixture-001'));
+    assert.ok(hits.every((h) => h.id === 'fixture-001'));
+  });
+
   it('toSeed fills gaps and fixture provenance', () => {
     const seed = matraix.toSeed(matraix.fetch('fixture-001'));
     assert.equal(seed.schemaVersion, '0.1.0');

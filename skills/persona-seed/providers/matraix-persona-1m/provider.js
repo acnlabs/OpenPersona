@@ -138,7 +138,7 @@ function scoreRecord(record, intent) {
     }
   }
   for (const loc of asArray(intent.locale)) {
-    if (loc && text.includes(norm(loc))) {
+    if (localeMatches(loc, a.primary_language, text)) {
       score += 2;
       hits.push(`locale:${loc}`);
     }
@@ -232,10 +232,27 @@ function fetch(id) {
 function localeFromLanguage(lang) {
   if (!lang) return [];
   const n = norm(lang);
-  if (n.includes('chinese') || n === 'zh' || n.includes('中文')) return ['zh'];
-  if (n.includes('english') || n === 'en') return ['en'];
-  if (n.includes('spanish') || n === 'es') return ['es'];
-  return [lang];
+  if (n.includes('chinese') || n === 'zh' || n.includes('中文') || n.startsWith('zh-')) {
+    return ['zh', 'chinese', '中文'];
+  }
+  if (n.includes('english') || n === 'en' || n.startsWith('en-')) {
+    return ['en', 'english'];
+  }
+  if (n.includes('spanish') || n === 'es' || n.startsWith('es-')) {
+    return ['es', 'spanish'];
+  }
+  return [n];
+}
+
+/** True when intent locale (code or name) matches record primary_language. */
+function localeMatches(intentLocale, primaryLanguage, haystackText) {
+  if (!intentLocale) return false;
+  const want = norm(intentLocale);
+  const aliases = new Set(localeFromLanguage(primaryLanguage).map(norm));
+  aliases.add(norm(primaryLanguage));
+  if (aliases.has(want)) return true;
+  // Also allow raw substring on haystack for unmapped language names
+  return Boolean(haystackText && haystackText.includes(want));
 }
 
 function toSeed(raw) {
@@ -319,4 +336,6 @@ module.exports = {
   toSeed,
   resetCorpusCache,
   isFixtureCorpus,
+  localeFromLanguage,
+  localeMatches,
 };

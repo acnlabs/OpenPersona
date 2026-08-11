@@ -1,14 +1,18 @@
 # Seed providers
 
-Each directory is one **Persona Seed** adapter. Orchestration lives in `../SKILL.md`; providers only implement the contract in `../references/provider-contract.md`.
+Adapters that turn corpus rows into `SeedProfile`. Orchestration: `../SKILL.md`. Contract: `../references/provider-contract.md`.
 
-| Provider id | Status | Notes |
-|-------------|--------|-------|
-| `matraix-persona-1m` | v1 | Attribute filter + fixture corpus; set `MATRAIX_CORPUS_PATH` for a larger decoded JSON array |
+**Source of truth for what is seed-capable:** [`registry.json`](./registry.json)
+
+| Provider id | Family | Status | HF repos |
+|-------------|--------|--------|----------|
+| `matraix-persona-1m` | attribute-census | ga | `MatrAIx2026/MatrAIx_Persona_1M` |
+
+`openpersona.co/datasets` may list many more corpora. Only registry rows are usable with persona-seed.
 
 ## Add a provider
 
-1. Copy `matraix-persona-1m/` as a template.
-2. Implement `capabilities`, `search`, `fetch`, `toSeed` in `provider.js`.
-3. Register in `../scripts/search.js` → `PROVIDERS`.
-4. Keep a tiny offline fixture for tests.
+1. Implement `providers/<id>/provider.js` (`capabilities`, `search`, `fetch`, `toSeed`).
+2. Prefer reusing a **family** module when the schema matches an existing adapter.
+3. Register in `registry.json` (`hfRepos`, `directoryUrls`, `status`).
+4. Keep an offline fixture for tests.

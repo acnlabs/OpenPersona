@@ -39,7 +39,8 @@ user intent
 
 Contract: `references/provider-contract.md`  
 Schemas: `schemas/intent.schema.json`, `schemas/seed-profile.schema.json`  
-Providers: `providers/` (add new sources there only)
+Registry: `providers/registry.json` (hfRepo / provider id → module; `/datasets` publish ≠ seed-capable)  
+Providers: `providers/<id>/` modules, registered explicitly
 
 ## Tools (scripts)
 
@@ -47,7 +48,10 @@ Set `SEED_DIR` to this skill directory (path containing `SKILL.md`).
 
 | Task | Command |
 |------|---------|
+| List registry | `node ${SEED_DIR}/scripts/search.js --list-providers` |
+| Seed-capable HF repos | `node ${SEED_DIR}/scripts/search.js --seed-capable` |
 | List provider caps | `node ${SEED_DIR}/scripts/search.js --capabilities` |
+| Caps by HF repo | `node ${SEED_DIR}/scripts/search.js --repo MatrAIx2026/MatrAIx_Persona_1M --capabilities` |
 | Search seeds | `node ${SEED_DIR}/scripts/search.js --intent '<json>'` |
 | Fetch raw | `node ${SEED_DIR}/scripts/search.js --fetch --id <id>` |
 | To SeedProfile | `node ${SEED_DIR}/scripts/search.js --to-seed --id <id>` |
@@ -143,6 +147,7 @@ Writes `soul/seed-provenance.json` only — does **not** add unknown root keys t
 
 ## Adding another corpus later
 
-1. Add `providers/<id>/` implementing the contract.
-2. Register in `scripts/search.js` → `PROVIDERS`.
-3. No new orchestration skill — reuse this one.
+1. Prefer an existing **family** adapter if the schema matches.
+2. Otherwise add `providers/<id>/` implementing the contract.
+3. Register in `providers/registry.json` (`hfRepos`, `family`, `status`).
+4. No new orchestration skill — reuse this one. `/datasets` listing alone is not enough.

@@ -1,28 +1,25 @@
 #!/usr/bin/env node
 'use strict';
 
-const matraix = require('../providers/matraix-persona-1m/provider');
-
-const PROVIDERS = {
-  [matraix.PROVIDER_ID]: matraix,
-};
-
-function resolveProvider(id) {
-  const key = id || matraix.PROVIDER_ID;
-  const provider = PROVIDERS[key];
-  if (!provider) {
-    throw new Error(
-      `Unknown provider "${key}". Registered: ${Object.keys(PROVIDERS).join(', ')}`
-    );
-  }
-  return provider;
-}
+const fs = require('fs');
+const {
+  listProviders,
+  resolveProvider,
+  seedCapableRepos,
+  loadRegistry,
+} = require('./registry');
 
 function parseArgs(argv) {
   const out = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--intent' || a === '--id' || a === '--provider' || a === '--out') {
+    if (
+      a === '--intent' ||
+      a === '--id' ||
+      a === '--provider' ||
+      a === '--repo' ||
+      a === '--out'
+    ) {
       out[a.slice(2)] = argv[++i];
     } else if (a === '--fetch') {
       out.fetch = true;
@@ -30,6 +27,10 @@ function parseArgs(argv) {
       out.toSeed = true;
     } else if (a === '--capabilities') {
       out.capabilities = true;
+    } else if (a === '--list-providers') {
+      out.listProviders = true;
+    } else if (a === '--seed-capable') {
+      out.seedCapable = true;
     } else {
       out._.push(a);
     }
@@ -39,10 +40,43 @@ function parseArgs(argv) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  const provider = resolveProvider(args.provider);
+
+  if (args.listProviders) {
+    const reg = loadRegistry();
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          defaultProvider: reg.raw.defaultProvider,
+          families: reg.raw.families,
+          providers: listProviders(),
+        },
+        null,
+        2
+      )}\n`
+    );
+    return;
+  }
+
+  if (args.seedCapable) {
+    process.stdout.write(`${JSON.stringify(seedCapableRepos(), null, 2)}\n`);
+    return;
+  }
+
+  const idOrRepo = args.provider || args.repo;
+  const { entry, provider } = resolveProvider(idOrRepo);
 
   if (args.capabilities) {
-    process.stdout.write(`${JSON.stringify(provider.capabilities(), null, 2)}\n`);
+    const caps = {
+      ...provider.capabilities(),
+      registry: {
+        id: entry.id,
+        family: entry.family,
+        status: entry.status,
+        hfRepos: entry.hfRepos || [],
+        directoryUrls: entry.directoryUrls || [],
+      },
+    };
+    process.stdout.write(`${JSON.stringify(caps, null, 2)}\n`);
     return;
   }
 
@@ -57,12 +91,14 @@ function main() {
 
   let intent = {};
   if (args.intent) {
-    intent = JSON.parse(args.intent.startsWith('{') ? args.intent : require('fs').readFileSync(args.intent, 'utf8'));
+    intent = JSON.parse(
+      args.intent.startsWith('{') ? args.intent : fs.readFileSync(args.intent, 'utf8')
+    );
   } else if (args._[0]) {
     intent = { query: args._.join(' '), limit: 5 };
   }
 
-  if (args.provider) intent.provider = args.provider;
+  if (entry.id) intent.provider = entry.id;
   const results = provider.search(intent);
   process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
 }
@@ -76,4 +112,9 @@ if (require.main === module) {
   }
 }
 
-module.exports = { PROVIDERS, resolveProvider };
+module.exports = {
+  resolveProvider: (id) => resolveProvider(id).provider,
+  resolveProviderWithEntry: resolveProvider,
+  listProviders,
+  seedCapableRepos,
+};

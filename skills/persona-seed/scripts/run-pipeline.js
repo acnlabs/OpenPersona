@@ -9,13 +9,14 @@
  *
  * Or pick a record:
  *   node run-pipeline.js --id fixture-001 --name "Seeded Nova" --slug seeded-nova --out /tmp/op-seed-out
+ *   node run-pipeline.js --repo MatrAIx2026/MatrAIx_Persona_1M --id fixture-001 --name "…" --out /tmp/out
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { resolveProvider } = require('./search');
+const { resolveProviderWithEntry } = require('./search');
 const { mapSeedToPersona } = require('./map-seed-to-persona');
 const { writeProvenance } = require('./write-provenance');
 
@@ -27,6 +28,7 @@ function parseArgs(argv) {
       a === '--intent' ||
       a === '--id' ||
       a === '--provider' ||
+      a === '--repo' ||
       a === '--name' ||
       a === '--slug' ||
       a === '--role' ||
@@ -44,7 +46,7 @@ function parseArgs(argv) {
 }
 
 async function run(args) {
-  const provider = resolveProvider(args.provider);
+  const { entry, provider } = resolveProviderWithEntry(args.provider || args.repo);
   let recordId = args.id;
 
   if (!recordId) {
@@ -110,6 +112,8 @@ async function run(args) {
 
   return {
     recordId,
+    providerId: entry.id,
+    family: entry.family,
     seedPath,
     personaPath,
     skillDir,

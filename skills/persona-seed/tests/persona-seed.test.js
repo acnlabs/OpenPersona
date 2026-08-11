@@ -11,6 +11,12 @@ const { mapSeedToPersona, slugify } = require('../scripts/map-seed-to-persona');
 const { writeProvenance } = require('../scripts/write-provenance');
 const { run: runPipeline } = require('../scripts/run-pipeline');
 const { validate } = require('../scripts/prepare-corpus');
+const {
+  resolveEntry,
+  resolveProvider,
+  seedCapableRepos,
+  listProviders,
+} = require('../scripts/registry');
 const { generate } = require('../../../lib/generator');
 
 describe('persona-seed / matraix-persona-1m', () => {
@@ -176,6 +182,27 @@ describe('persona-seed / prepare-corpus', () => {
     const result = await validate(fixture);
     assert.equal(result.ok, true);
     assert.equal(result.count, 5);
+  });
+});
+
+describe('persona-seed / registry', () => {
+  it('resolves default and hfRepo to matraix-persona-1m', () => {
+    assert.equal(resolveEntry().id, 'matraix-persona-1m');
+    assert.equal(resolveEntry('MatrAIx2026/MatrAIx_Persona_1M').id, 'matraix-persona-1m');
+    assert.equal(resolveEntry('matraix2026/matraix_persona_1m').id, 'matraix-persona-1m');
+    const { entry, provider } = resolveProvider('matraix-persona-1m');
+    assert.equal(entry.family, 'attribute-census');
+    assert.equal(provider.capabilities().id, 'matraix-persona-1m');
+  });
+
+  it('lists seed-capable directory mapping', () => {
+    const rows = seedCapableRepos();
+    assert.ok(rows.some((r) => r.repo === 'MatrAIx2026/MatrAIx_Persona_1M'));
+    assert.ok(listProviders({ status: 'ga' }).length >= 1);
+  });
+
+  it('rejects unknown provider ids', () => {
+    assert.throws(() => resolveEntry('not-a-provider'), /Unknown provider/);
   });
 });
 

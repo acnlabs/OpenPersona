@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "0.1.0",
+  "defaultProvider": "matraix-persona-1m",
+  "families": {
+    "attribute-census": "Structured demographic / psychographic attribute rows → SeedProfile",
+    "persona-card": "Name/bio/personality card rows → SeedProfile",
+    "dialogue-extract": "Dialogue corpora; extract persona then SeedProfile (secondary)",
+    "generic-hf": "Ad-hoc HF column mapping (experimental)"
+  },
+  "providers": [
+    {
+      "id": "matraix-persona-1m",
+      "family": "attribute-census",
+      "name": "MatrAIx Persona 1M",
+      "module": "./matraix-persona-1m/provider.js",
+      "hfRepos": ["MatrAIx2026/MatrAIx_Persona_1M"],
+      "directoryUrls": [
+        "https://openpersona.co/datasets/matraix2026/matraix-persona-1m"
+      ],
+      "status": "ga",
+      "notes": "Fixture offline by default; set MATRAIX_CORPUS_PATH for decoded JSON/JSONL."
+    }
+  ]
+}

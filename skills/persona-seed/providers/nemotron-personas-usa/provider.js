@@ -97,6 +97,40 @@ function regionOf(row) {
   return [row.city, row.state, row.country].filter(Boolean).join(', ') || null;
 }
 
+function isUsaCountry(country) {
+  const n = norm(country);
+  return (
+    n === 'usa' ||
+    n === 'us' ||
+    n === 'united states' ||
+    n === 'united states of america' ||
+    n === 'u.s.' ||
+    n === 'u.s.a.'
+  );
+}
+
+/** Match region intent against city/state/country only (not full haystack). */
+function regionMatches(intentRegion, row) {
+  if (!intentRegion) return false;
+  const want = norm(intentRegion);
+  const city = norm(row.city);
+  const state = norm(row.state);
+  const country = norm(row.country);
+
+  // Short codes (WA, OR, CA, NY…): exact state/city only — avoid "or" in "new york"
+  if (want.length <= 3) {
+    return state === want || city === want;
+  }
+
+  if (city && (city === want || city.includes(want) || want.includes(city))) return true;
+  if (state && (state === want || state.includes(want) || want.includes(state))) return true;
+  if (country && (country === want || country.includes(want) || want.includes(country))) return true;
+  if (isUsaCountry(row.country) && (want === 'usa' || want === 'united states')) {
+    return true;
+  }
+  return false;
+}
+
 function haystack(row) {
   return [
     row.persona,
@@ -151,7 +185,7 @@ function scoreRecord(row, intent) {
     }
   }
   for (const r of asArray(intent.region)) {
-    if (r && text.includes(norm(r))) {
+    if (regionMatches(r, row)) {
       score += 2;
       hits.push(`region:${r}`);
     }
@@ -159,8 +193,7 @@ function scoreRecord(row, intent) {
   for (const loc of asArray(intent.locale)) {
     const n = norm(loc);
     const isEn = n === 'en' || n === 'english' || n.startsWith('en-');
-    const usa = norm(row.country) === 'usa' || norm(row.country) === 'us';
-    if ((isEn && usa) || (!isEn && text.includes(n))) {
+    if (isEn && isUsaCountry(row.country)) {
       score += 2;
       hits.push(`locale:${loc}`);
     }

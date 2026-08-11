@@ -247,6 +247,37 @@ describe('persona-seed / nemotron-personas-usa', () => {
     const seed = nemotron.toSeed(nemotron.fetch('nemo-fixture-003'));
     assert.ok(seed.constraints.sensitiveFlags.includes('healthcare_domain'));
   });
+
+  it('region filter uses geo fields only (no haystack false positives)', () => {
+    // "WA" must not match via substring inside "software"
+    const wa = nemotron.search({ region: ['WA'], limit: 10 });
+    assert.ok(wa.every((h) => h.id === 'nemo-fixture-001'));
+    const orHits = nemotron.search({ region: ['OR'], limit: 10 });
+    assert.deepEqual(orHits, []);
+  });
+
+  it('locale en matches United States country values', () => {
+    const prev = process.env.NEMOTRON_CORPUS_PATH;
+    const tmp = path.join(os.tmpdir(), `nemo-usa-${Date.now()}.json`);
+    const row = {
+      ...nemotron.fetch('nemo-fixture-001'),
+      uuid: 'nemo-united-states',
+      country: 'United States',
+    };
+    fs.writeFileSync(tmp, `${JSON.stringify([row])}\n`);
+    process.env.NEMOTRON_CORPUS_PATH = tmp;
+    nemotron.resetCorpusCache();
+    try {
+      const hits = nemotron.search({ locale: ['en'], limit: 5 });
+      assert.equal(hits.length, 1);
+      assert.equal(hits[0].id, 'nemo-united-states');
+    } finally {
+      if (prev === undefined) delete process.env.NEMOTRON_CORPUS_PATH;
+      else process.env.NEMOTRON_CORPUS_PATH = prev;
+      nemotron.resetCorpusCache();
+      fs.rmSync(tmp, { force: true });
+    }
+  });
 });
 
 
